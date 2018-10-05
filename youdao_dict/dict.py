@@ -14,7 +14,7 @@ pygtk.require('2.0')
 import gtk
 import gobject
 import webkit
-
+import pyperclip
 import youdao_client
 
 VERSION = "0.1.0"
@@ -22,16 +22,16 @@ PWD = os.path.dirname(os.path.realpath(__file__))
 LOGO = PWD + '/icon.png'
 
 HOME = os.getenv("HOME") + '/.youdao-dict/'
-COMMONWORDS_PATH = HOME + '/common_words.txt'
+# COMMONWORDS_PATH = HOME + '/common_words.txt'
 LOG_PATH = HOME + '/dict.log'
 LOCK_PATH = HOME +  '/.lock'
 
 if not os.path.exists(HOME):
     os.mkdir(HOME)
-if not os.path.exists(COMMONWORDS_PATH):
-    file(COMMONWORDS_PATH, 'w').close()
+# if not os.path.exists(COMMONWORDS_PATH):
+#     file(COMMONWORDS_PATH, 'w').close()
 
-WHITELIST = set( [s.strip() for s in file(COMMONWORDS_PATH).readlines()])
+# WHITELIST = set( [s.strip() for s in file(COMMONWORDS_PATH).readlines()])
 
 logging.basicConfig(filename=LOG_PATH, level=logging.DEBUG)
 
@@ -92,9 +92,9 @@ class Dict:
         if self.window.get_property('visible') and not self.mouse_in:
             x, y = self.window.get_position()
             px, py, mods = self.window.get_screen().get_root_window().get_pointer()
-            if (px-x)*(px-x) + (py-y)*(py-y) > 400:  # distance > 20 in x, 20 in y
-                logging.debug('distance big enough, hide window')
-                self.window.hide();
+            # if (px-x)*(px-x) + (py-y)*(py-y) > 400:  # distance > 20 in x, 20 in y
+            #     logging.debug('distance big enough, hide window')
+            #     self.window.hide();
             if(time.time() - self.popuptime > 3):   # popup for some seconds
                 logging.debug('time long enough, hide window')
                 self.window.hide();
@@ -140,7 +140,7 @@ class Dict:
 
         youdao_client.pronounce(word)
         x, y, mods = self.window.get_screen().get_root_window().get_pointer()
-        self.window.move(x+15, y+10)
+        self.window.move(x, y+50)
 
         self.window.present()
 
@@ -151,11 +151,10 @@ class Dict:
             phonetic = ''
         explains = '<br/>'.join(js['basic']['explains'])
         #web = '<br/>'.join( ['<a href="http://dict.youdao.com/search?le=eng&q=%s">%s</a>: %s'%(i['key'], i['key'], ' '.join(i['value'])) for i in js['web'][:3] ] )
-        web = '<br/>'.join( ['<a href="">%s</a>: %s'%(i['key'], ' '.join(i['value'])) for i in js['web'][:3] ] )
+        web = '<br/>'.join( ['<em>%s</em>: %s'%(i['key'], ' '.join(i['value'])) for i in js['web'][:3] ] )
         html = '''
 <style>
 .add_to_wordbook {
-    background: url(http://bs.baidu.com/yanglin/add.png) no-repeat;
     vertical-align: middle;
     overflow: hidden;
     display: inline-block;
@@ -170,7 +169,6 @@ class Dict:
         <h2>
         %(translation)s
         <span style="color: #0B6121; font-size: 12px">< %(phonetic)s > </span>
-        <a href="javascript:void(0);" id="wordbook" class="add_to_wordbook" title="点击在浏览器中打开" onclick="document.title='%(word)s'"></a> <br/>
         </h2>
 
         <span style="color: #A0A0A0; font-size: 15px">[ %(word)s ] </span>
@@ -186,12 +184,15 @@ class Dict:
         self.view.load_html_string(html, '')
         self.view.reload()
         self.popuptime = time.time()
+        pyperclip.copy(explains.replace('<br/>','\n')) 
+        
+
 
     def ignore(self, word):
-        if len(word)<=3:
+        if len(word)<=0:
             return True
-        if word in WHITELIST:
-            return True
+        # if word in WHITELIST:
+        #     return True
         return False
 
     def _on_mouse_enter(self, wid, event):
@@ -242,7 +243,7 @@ class DictStatusIcon:
         about_dialog.destroy()
 
 def main():
-    DictStatusIcon()
+    # DictStatusIcon()
     Dict()
     gtk.main()
 
@@ -251,8 +252,7 @@ if __name__ == "__main__":
     try:
         fcntl.flock(f.fileno(), fcntl.LOCK_EX|fcntl.LOCK_NB)
     except:
-        print 'a process is already running!!!'
+        print('a process is already running!!!')
         exit(0)
-
     main()
 
